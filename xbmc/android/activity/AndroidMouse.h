@@ -28,6 +28,7 @@ public:
   CAndroidMouse();
   virtual ~CAndroidMouse();
   bool onMouseEvent(AInputEvent* event);
+  void fakeMouseButtonEvent( void );
 
 protected:
 
@@ -38,4 +39,6 @@ private:
 
 private:
   int32_t m_lastButtonState;
+  float oldX;
+  float oldY;
 };

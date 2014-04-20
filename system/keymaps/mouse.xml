@@ -3,6 +3,7 @@
   <global>
     <mouse>
       <leftclick>leftclick</leftclick>
+	  <lefthold>contextmenu</lefthold>
       <middleclick>middleclick</middleclick>
       <rightclick>rightclick</rightclick>
       <doubleclick>doubleclick</doubleclick>

@@ -108,6 +108,7 @@ void CMouseStat::HandleEvent(XBMC_Event& newEvent)
   {
     bClick[i] = false;
     bDoubleClick[i] = false;
+	bLongClick[i] = false;
     bHold[i] = 0;
 
     // CButtonState::Update does the hard work of checking the button state
@@ -115,8 +116,11 @@ void CMouseStat::HandleEvent(XBMC_Event& newEvent)
     CButtonState::BUTTON_ACTION action = m_buttonState[i].Update(now, m_mouseState.x, m_mouseState.y, m_mouseState.button[i]);
     switch (action)
     {
+	case CButtonState::MB_LONG_CLICK:
+	  bLongClick[i] = true;
+      bNothingDown = false;
+      break;
     case CButtonState::MB_SHORT_CLICK:
-    case CButtonState::MB_LONG_CLICK:
       bClick[i] = true;
       bNothingDown = false;
       break;
@@ -140,6 +144,8 @@ void CMouseStat::HandleEvent(XBMC_Event& newEvent)
   // i.e. a button down followed by a button up.
   if (bClick[MOUSE_LEFT_BUTTON])
     m_Action = ACTION_MOUSE_LEFT_CLICK;
+  else if (bLongClick[MOUSE_LEFT_BUTTON])  
+   	m_Action = ACTION_MOUSE_LEFT_HOLD;
   else if (bClick[MOUSE_RIGHT_BUTTON])
     m_Action = ACTION_MOUSE_RIGHT_CLICK;
   else if (bClick[MOUSE_MIDDLE_BUTTON])
@@ -270,11 +276,12 @@ CMouseStat::CButtonState::BUTTON_ACTION CMouseStat::CButtonState::Update(unsigne
       m_time = time;
       m_x = x;
       m_y = y;
+	  m_longClickSent = false;
     }
   }
   else if (m_state == STATE_IN_CLICK)
   {
-    if (down)
+    if (down && (time - m_time < short_click_time) )
     {
       if (!InClickRange(x,y))
       { // beginning a drag
@@ -294,8 +301,18 @@ CMouseStat::CButtonState::BUTTON_ACTION CMouseStat::CButtonState::Update(unsigne
       }
       else
       { // long click
-        m_state = STATE_RELEASED;
-        return MB_LONG_CLICK;
+        if (down && !m_longClickSent)
+ 		{
+ 			m_longClickSent = true;
+ 			return MB_LONG_CLICK;
+ 		}
+ 		else if (!down && m_longClickSent)
+         	m_state = STATE_RELEASED;
+ 		else if (!m_longClickSent)
+ 		{	
+         	m_state = STATE_RELEASED;
+         	return MB_LONG_CLICK;
+ 		}
       }
     }
   }

@@ -89,12 +89,20 @@ void CAndroidMouse::MouseMove(float x, float y)
   CWinEvents::MessagePush(&newEvent);
 }
 
+void CAndroidMouse::fakeMouseButtonEvent( void )
+{
+  MouseButton( oldX, oldY, AMOTION_EVENT_ACTION_DOWN, AMOTION_EVENT_BUTTON_PRIMARY);
+}
+
 void CAndroidMouse::MouseButton(float x, float y, int32_t action, int32_t buttons)
 {
 #ifdef DEBUG_VERBOSE
   CXBMCApp::android_printf("%s: x:%f, y:%f, action:%i, buttons:%i", __PRETTY_FUNCTION__, x, y, action, buttons);
 #endif
   XBMC_Event newEvent;
+  
+  oldX = x;
+  oldY = y;
 
   memset(&newEvent, 0, sizeof(newEvent));
 

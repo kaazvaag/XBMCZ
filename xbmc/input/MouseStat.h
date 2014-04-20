@@ -138,6 +138,7 @@ private:
                         STATE_IN_DRAG };          ///< mouse button is down during a drag
 
     BUTTON_STATE m_state;
+	bool m_longClickSent;
     unsigned int m_time;
     int m_x;
     int m_y;
@@ -167,6 +168,7 @@ private:
 
   bool bClick[5];
   bool bDoubleClick[5];
+  bool bLongClick[5];
   int  bHold[5];
 
   uint32_t m_Action;

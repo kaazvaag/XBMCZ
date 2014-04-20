@@ -152,46 +152,71 @@ bool CGUIDialogKeyboardGeneric::OnAction(const CAction &action)
   {
     OnPasteClipboard();
   }
-  else if (action.GetID() >= KEY_VKEY && action.GetID() < KEY_ASCII)
+  else if ( (action.GetID() >= KEY_VKEY && action.GetID() < KEY_ASCII) || (action.GetButtonCode() >= KEY_VKEY && action.GetButtonCode() < KEY_ASCII) )
   { // input from the keyboard (vkey, not ascii)
     if (!m_strEditing.empty())
       return handled;
-    uint8_t b = action.GetID() & 0xFF;
-    if (b == XBMCVK_HOME)
+    uint8_t b = action.GetButtonCode() ? action.GetButtonCode() & 0xFF : action.GetID() & 0xFF;
+     
+    switch (b)
     {
-      SetCursorPos(0);
-    }
-    else if (b == XBMCVK_END)
-    {
-      SetCursorPos(m_strEdit.size());
-    }
-    else if (b == XBMCVK_LEFT)
-    {
-      MoveCursor( -1);
-    }
-    else if (b == XBMCVK_RIGHT)
-    {
-      MoveCursor(1);
-    }
-    else if (b == XBMCVK_RETURN || b == XBMCVK_NUMPADENTER)
-    {
-      OnOK();
-    }
-    else if (b == XBMCVK_DELETE)
-    {
-      if (GetCursorPos() < (int)m_strEdit.size())
-      {
-        MoveCursor(1);
-        Backspace();
-      }
-    }
-    else if (b == XBMCVK_BACK) Backspace();
-    else if (b == XBMCVK_ESCAPE) Close();
+      case XBMCVK_HOME:
+    	SetCursorPos(0);
+     	break;
+      case XBMCVK_END:
+ 	    SetCursorPos(m_strEdit.size());
+     	break;
+      case XBMCVK_LEFT:
+     	MoveCursor( -1);
+     	break;
+      case XBMCVK_RIGHT:
+     	MoveCursor(1);
+     	break;
+      case XBMCVK_RETURN:
+      case XBMCVK_NUMPADENTER:
+     	OnOK();
+     	break;
+      case XBMCVK_DELETE:
+ 		if (GetCursorPos() < (int)m_strEdit.size())
+ 		{
+ 			MoveCursor(1);
+ 			Backspace();
+ 		}
+     	break;
+      case XBMCVK_BACK:
+     	Backspace();
+     	break;
+      case XBMCVK_ESCAPE:
+     	Close();
+     	break;
+      case XBMCVK_LSHIFT:
+      case XBMCVK_RSHIFT:
+ 		OnShift();
+ 		break;
+      case XBMCVK_CAPSLOCK:
+ 		OnCapsLock();
+ 		break;
+ 	}	
   }
   else if (action.GetID() >= KEY_ASCII)
   { // input from the keyboard
     //char ch = action.GetID() & 0xFF;
     int ch = action.GetUnicode();
+	
+	if( m_keyType == LOWER && m_bShift )
+    {
+ 		if (ch >= 'a' && ch <= 'z')
+     		ch -= 32;
+     		
+     	OnShift();	
+ 	}	
+ 	else if( m_keyType == CAPS && !m_bShift )
+ 	{
+ 		if (ch >= 'a' && ch <= 'z')
+     		ch -= 32;
+    }
+    else if( m_keyType == CAPS && m_bShift )
+     	OnShift();
     
     // Ignore non-printing characters
     if ( !((0 <= ch && ch < 0x8) || (0xE <= ch && ch < 0x1B) || (0x1C <= ch && ch < 0x20)) )
@@ -222,7 +247,7 @@ bool CGUIDialogKeyboardGeneric::OnAction(const CAction &action)
       default:  //use character input
         // When we support text input method, we only accept text by gui text message.
         if (!g_Windowing.IsTextInputEnabled())
-          Character(action.GetUnicode());
+          Character(ch);
         break;
       }
     }
@@ -260,11 +285,7 @@ bool CGUIDialogKeyboardGeneric::OnMessage(CGUIMessage& message)
         OnShift();
         break;
       case CTL_BUTTON_CAPS:
-        if (m_keyType == LOWER)
-          m_keyType = CAPS;
-        else if (m_keyType == CAPS)
-          m_keyType = LOWER;
-        UpdateButtons();
+        OnCapsLock();
         break;
       case CTL_BUTTON_SYMBOLS:
         OnSymbols();
@@ -650,6 +671,15 @@ void CGUIDialogKeyboardGeneric::OnShift()
   UpdateButtons();
 }
 
+void CGUIDialogKeyboardGeneric::OnCapsLock()
+{
+  if (m_keyType == LOWER)
+    m_keyType = CAPS;
+  else if (m_keyType == CAPS)
+    m_keyType = LOWER;
+  UpdateButtons();
+}
+ 
 void CGUIDialogKeyboardGeneric::OnIPAddress()
 {
   // find any IP address in the current string if there is any

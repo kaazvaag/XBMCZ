@@ -43,6 +43,7 @@ private:
   static int32_t inputCallback(android_app* application, AInputEvent* event);
 
   bool m_enabled;
+  bool m_mouseDownEvent;
   android_app* m_application;
   IActivityHandler* m_activityHandler;
   IInputHandler* m_inputHandler;

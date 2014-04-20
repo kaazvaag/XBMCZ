@@ -390,6 +390,7 @@ static const ActionMapping windows[] =
 static const ActionMapping mousecommands[] =
 {
   { "leftclick",   ACTION_MOUSE_LEFT_CLICK },
+  { "lefthold",    ACTION_MOUSE_LEFT_HOLD },
   { "rightclick",  ACTION_MOUSE_RIGHT_CLICK },
   { "middleclick", ACTION_MOUSE_MIDDLE_CLICK },
   { "doubleclick", ACTION_MOUSE_DOUBLE_CLICK },

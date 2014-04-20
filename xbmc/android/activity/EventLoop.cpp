@@ -48,6 +48,7 @@ void CEventLoop::run(IActivityHandler &activityHandler, IInputHandler &inputHand
 
   m_activityHandler = &activityHandler;
   m_inputHandler = &inputHandler;
+  m_mouseDownEvent = false;
 
   // missing in early NDKs, is present in r9b+
   p_AMotionEvent_getAxisValue = (typeof(AMotionEvent_getAxisValue)*) dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
@@ -58,19 +59,25 @@ void CEventLoop::run(IActivityHandler &activityHandler, IInputHandler &inputHand
   CXBMCApp::android_printf("CEventLoop: starting event loop");
   while (1)
   {
-    // We will block forever waiting for events.
-    while ((ident = ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0)
+    // We will block forever waiting for events or if mouse down wait 500ms
+    while ((ident = ALooper_pollAll( m_mouseDownEvent ? 500 : -1, NULL, &events, (void**)&source)) )
     {
-      // Process this event.
-      if (source != NULL)
-        source->process(m_application, source);
-
-      // Check if we are exiting.
-      if (m_application->destroyRequested)
-      {
-        CXBMCApp::android_printf("CEventLoop: we are being destroyed");
-        return;
-      }
+      // If true event
+   	  if ( ident >= 0 )
+ 	  {
+      	// Process this event.
+       	if (source != NULL)
+         	source->process(m_application, source);
+ 
+       	// Check if we are exiting.
+       	if (m_application->destroyRequested)
+      	{
+        		CXBMCApp::android_printf("CEventLoop: we are being destroyed");
+         	return;
+       	}
+ 	  }
+ 	  else if ( m_mouseDownEvent )
+       	m_inputHandler->fakeMouseButtonEvent();
     }
   }
 }
@@ -148,6 +155,7 @@ int32_t CEventLoop::processInput(AInputEvent* event)
   int32_t rtn    = 0;
   int32_t type   = AInputEvent_getType(event);
   int32_t source = AInputEvent_getSource(event);
+  int8_t mouseAction;
 
   switch(type)
   {
@@ -166,7 +174,13 @@ int32_t CEventLoop::processInput(AInputEvent* event)
           rtn = m_inputHandler->onTouchEvent(event);
           break;
         case AINPUT_SOURCE_MOUSE:
-          rtn = m_inputHandler->onMouseEvent(event);
+		  mouseAction = AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
+          if ( mouseAction == AMOTION_EVENT_ACTION_DOWN )
+           	m_mouseDownEvent = true;
+          else if ( mouseAction == AMOTION_EVENT_ACTION_UP )
+           	m_mouseDownEvent = false;
+          
+		  rtn = m_inputHandler->onMouseEvent(event);
           break;
         case AINPUT_SOURCE_GAMEPAD:
         case AINPUT_SOURCE_JOYSTICK:
