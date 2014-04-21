@@ -1,4 +1,4 @@
-package org.xbmc.xbmc;
+package org.xbmc.xbmcZ;
 
 import android.app.NativeActivity;
 import android.content.Intent;

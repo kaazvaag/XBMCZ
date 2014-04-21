@@ -1,4 +1,4 @@
-package org.xbmc.xbmc;
+package org.xbmc.xbmcZ;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
