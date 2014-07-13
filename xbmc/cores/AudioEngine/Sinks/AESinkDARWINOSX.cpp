@@ -438,6 +438,10 @@ static void EnumerateDevices(CADeviceList &list)
       }
       else// treat all other digital passthrough devices as optical
         device.m_deviceType = AE_DEVTYPE_IEC958;
+
+      //treat all other digital devices as HDMI to let options open to the user
+      if (device.m_deviceType == AE_DEVTYPE_PCM)
+        device.m_deviceType = AE_DEVTYPE_HDMI;
     }
 
     // devicename based overwrites from former code - maybe FIXME at some point when we
@@ -589,6 +593,19 @@ CAESinkDARWINOSX::~CAESinkDARWINOSX()
   RegisterDeviceChangedCB(false, this);
 }
 
+float scoreSampleRate(Float64 destinationRate, unsigned int sourceRate)
+{
+  float score = 0;
+  double intPortion;
+  double fracPortion = modf(destinationRate / sourceRate, &intPortion);
+
+  score += (1 - fracPortion) * 1000;      // prefer sample rates that are multiples of the source sample rate
+  score += (intPortion == 1.0) ? 500 : 0;   // prefer exact matches over other multiples
+  score += (intPortion > 1 && intPortion < 100) ? (100 - intPortion) / 100 * 100 : 0; // prefer smaller multiples otherwise
+
+  return score;
+}
+
 float ScoreStream(const AudioStreamBasicDescription &desc, const AEAudioFormat &format)
 {
   float score = 0;
@@ -624,10 +641,8 @@ float ScoreStream(const AudioStreamBasicDescription &desc, const AEAudioFormat &
   { // non-passthrough, whatever works is fine
     if (desc.mFormatID == kAudioFormatLinearPCM)
     {
-      if (desc.mSampleRate == format.m_sampleRate)
-        score += 10;
-      else if (desc.mSampleRate > format.m_sampleRate)
-        score += 1;
+      score += scoreSampleRate(desc.mSampleRate, format.m_sampleRate);
+
       if (desc.mChannelsPerFrame == format.m_channelLayout.Count())
         score += 5;
       else if (desc.mChannelsPerFrame > format.m_channelLayout.Count())
@@ -722,7 +737,7 @@ bool CAESinkDARWINOSX::Initialize(AEAudioFormat &format, std::string &device)
 
       if (score > outputScore)
       {
-        passthrough  = score > 1000;
+        passthrough  = score > 10000;
         outputScore  = score;
         outputFormat = desc;
         outputStream = *i;
